@@ -55,4 +55,14 @@ This keeps `FINNHUB_API_KEY` on the server side and out of the client bundle.
 
 1) Import the GitHub repo into Vercel
 2) Add an environment variable: `FINNHUB_API_KEY`
-3) Deploy
+3) Framework preset: Vite
+4) Build command: `npm run build`
+5) Output directory: `dist`
+6) Deploy
+
+Notes:
+
+- Recommended Node version: 20.x (see `.nvmrc`).
+- After deploying, verify these routes work:
+	- `/api/quote?symbol=AAPL`
+	- `/api/candles?symbol=AAPL`
