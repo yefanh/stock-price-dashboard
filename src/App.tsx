@@ -1,4 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { PriceChart } from './components/PriceChart'
+import { fetchCandles } from './lib/candles'
+import { formatShortDateFromUnixSeconds } from './lib/dates'
 import { formatPercent, formatUsd } from './lib/format'
 import { ApiError, fetchQuote, type Quote } from './lib/quotes'
 import { DEFAULT_SYMBOLS } from './lib/symbols'
@@ -17,6 +20,11 @@ function App() {
   const [query, setQuery] = useState('')
   const [sortKey, setSortKey] = useState<SortKey>('symbol')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
+  const [chartLoading, setChartLoading] = useState(false)
+  const [chartError, setChartError] = useState<string | null>(null)
+  const [chartPoints, setChartPoints] = useState<Array<{ label: string; value: number }> | null>(null)
 
   async function refresh() {
     setError(null)
@@ -53,6 +61,42 @@ function App() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!selectedSymbol) {
+      setChartError(null)
+      setChartPoints(null)
+      return
+    }
+
+    const symbol = selectedSymbol
+
+    const controller = new AbortController()
+
+    async function load() {
+      setChartError(null)
+      setChartLoading(true)
+      setChartPoints(null)
+
+      try {
+        const series = await fetchCandles(symbol, controller.signal)
+        setChartPoints(
+          series.points.map((p) => ({
+            label: formatShortDateFromUnixSeconds(p.t),
+            value: p.close,
+          })),
+        )
+      } catch (err: any) {
+        const msg = err instanceof ApiError ? `${err.message} (HTTP ${err.status})` : err?.message ?? 'Failed to load chart'
+        setChartError(msg)
+      } finally {
+        setChartLoading(false)
+      }
+    }
+
+    load()
+    return () => controller.abort()
+  }, [selectedSymbol])
 
   const visibleRows = useMemo(() => {
     const q = query.trim().toUpperCase()
@@ -204,7 +248,15 @@ function App() {
                     const changeClass = isUp ? 'text-emerald-700' : 'text-red-700'
 
                     return (
-                      <tr key={quote.symbol}>
+                      <tr
+                        key={quote.symbol}
+                        className={
+                          selectedSymbol === quote.symbol
+                            ? 'bg-slate-50'
+                            : 'cursor-pointer hover:bg-slate-50'
+                        }
+                        onClick={() => setSelectedSymbol(quote.symbol)}
+                      >
                         <td className="px-4 py-4 font-medium text-slate-900">{quote.symbol}</td>
                         <td className="px-4 py-4 text-slate-900">{formatUsd(quote.price)}</td>
                         <td className={`px-4 py-4 font-medium ${changeClass}`}>{formatPercent(quote.changePercent)}</td>
@@ -217,9 +269,25 @@ function App() {
           </div>
         </section>
 
-        <div className="mt-4 text-xs text-slate-500">
-          Tip: create a <span className="font-mono">.env</span> file with <span className="font-mono">FINNHUB_API_KEY</span>, then click Refresh.
-        </div>
+        <section className="mt-4">
+          {!selectedSymbol ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
+              Select a row to view a 7-day price chart.
+            </div>
+          ) : chartLoading ? (
+            <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600">
+              Loading chart for {selectedSymbol}…
+            </div>
+          ) : chartError ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              {chartError}
+            </div>
+          ) : chartPoints ? (
+            <PriceChart title={`${selectedSymbol} price history`} points={chartPoints} />
+          ) : null}
+        </section>
+
+        <div className="mt-4 text-xs text-slate-500">Data provided by Finnhub.</div>
       </main>
     </div>
   )
