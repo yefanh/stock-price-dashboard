@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { PriceChart } from './components/PriceChart'
 import { fetchCandles } from './lib/candles'
 import { formatShortDateFromUnixSeconds } from './lib/dates'
@@ -26,7 +26,7 @@ function App() {
   const [chartError, setChartError] = useState<string | null>(null)
   const [chartPoints, setChartPoints] = useState<Array<{ label: string; value: number }> | null>(null)
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setError(null)
     setLoading(true)
 
@@ -60,7 +60,11 @@ function App() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    refresh()
+  }, [refresh])
 
   useEffect(() => {
     if (!selectedSymbol) {
