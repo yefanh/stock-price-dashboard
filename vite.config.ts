@@ -1,14 +1,25 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [
-    react(),
-    {
-      name: 'local-finnhub-api',
-      configureServer(server) {
-        server.middlewares.use('/api/quote', async (req, res) => {
+export default defineConfig(({ mode }) => {
+  // Vite loads env variables for client usage via import.meta.env, but our dev-only
+  // server middleware reads from process.env. We explicitly load .env here to ensure
+  // FINNHUB_API_KEY is available during local development.
+  const env = loadEnv(mode, process.cwd(), '')
+  for (const [key, value] of Object.entries(env)) {
+    if (process.env[key] === undefined) {
+      process.env[key] = value
+    }
+  }
+
+  return {
+    plugins: [
+      react(),
+      {
+        name: 'local-finnhub-api',
+        configureServer(server) {
+          server.middlewares.use('/api/quote', async (req, res) => {
           if (req.method !== 'GET') {
             res.statusCode = 405
             res.setHeader('Allow', 'GET')
@@ -80,8 +91,9 @@ export default defineConfig({
             res.setHeader('Content-Type', 'application/json; charset=utf-8')
             res.end(JSON.stringify({ error: 'Failed to fetch quote', details: err?.message }))
           }
-        })
+          })
+        },
       },
-    },
-  ],
+    ],
+  }
 })

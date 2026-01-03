@@ -37,7 +37,7 @@ function App() {
         const reason = result.reason
         const message =
           reason instanceof ApiError
-            ? `API error (${reason.status})`
+            ? `${reason.message} (HTTP ${reason.status})`
             : reason instanceof Error
               ? reason.message
               : 'Unknown error'

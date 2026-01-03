@@ -24,6 +24,17 @@ export async function fetchQuote(symbol: string, signal?: AbortSignal): Promise<
 
   if (!res.ok) {
     const text = await res.text().catch(() => '')
+
+    // The API returns JSON like: { "error": "..." }. Try to surface a clean message.
+    try {
+      const parsed = JSON.parse(text) as { error?: string }
+      if (parsed && typeof parsed.error === 'string' && parsed.error.trim().length > 0) {
+        throw new ApiError(parsed.error, res.status)
+      }
+    } catch {
+      // If parsing fails, fall back to the raw text.
+    }
+
     throw new ApiError(text || `Request failed with status ${res.status}`, res.status)
   }
 
