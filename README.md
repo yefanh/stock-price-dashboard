@@ -8,6 +8,7 @@ A simple stock price dashboard built with React and Tailwind CSS.
 - Shows price and daily percent change
 - Loading and error states
 - Search and sortable columns (small UX improvement)
+- Optional 7-day price chart (select a row)
 
 ## Tech Stack
 
@@ -15,6 +16,7 @@ A simple stock price dashboard built with React and Tailwind CSS.
 - Vite
 - Tailwind CSS
 - Finnhub API (quotes)
+- Stooq (7-day daily candles for chart)
 
 ## Local Development
 

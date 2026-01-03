@@ -287,7 +287,7 @@ function App() {
           ) : null}
         </section>
 
-        <div className="mt-4 text-xs text-slate-500">Data provided by Finnhub.</div>
+        <div className="mt-4 text-xs text-slate-500">Quotes: Finnhub. Chart: Stooq.</div>
       </main>
     </div>
   )
